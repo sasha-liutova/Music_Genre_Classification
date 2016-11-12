@@ -12,10 +12,12 @@ from IPython.display import Image
 from os import walk
 from os.path import isfile, join
 
+path_to_folder = "./genres_train"
+
 # 2. Load the audio as a waveform `y`
 #    Store the sampling rate as `sr`
 array_of_path = []
-for (dirpath, dirnames, filenames) in walk("./genres"):
+for (dirpath, dirnames, filenames) in walk(path_to_folder):
     array_of_path.extend([join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")])
 
 array_y = []
@@ -23,20 +25,22 @@ array_sr = []
 
 for path in array_of_path:
     y, sr = librosa.load(path=path)
-    array_y.extend(y)
+    array_y.extend([y])
     array_sr.extend([sr])
 
-# y, sr = librosa.load("./genres/rock/rock.00000.au")
+y, sr = librosa.load("./genres/rock/rock.00000.au")
 # y2, sr2 = librosa.load("./genres/blues/blues.00000.au")
 # y3, sr3 = librosa.load("./genres/classical/classical.00000.au")
 # y4, sr4 = librosa.load("./genres/country/country.00000.au")
 
 array_mfcc = []
 
-for i in range(0,len(array_y)):
-    array_mfcc.extend(librosa.feature.mfcc(y=array_y[i], sr=array_sr[i]))
+librosa.feature.mfcc(array_y[0], array_sr[0])
 
-# mfcc =  librosa.feature.mfcc(y=y, sr=sr)
+for i in range(0,len(array_y)):
+    array_mfcc.append(librosa.feature.mfcc(y=array_y[i], sr=array_sr[i]))
+
+mfcc =  librosa.feature.mfcc(y=y, sr=sr)
 # mfcc2 =  librosa.feature.mfcc(y=y2, sr=sr2)
 # mfcc3 =  librosa.feature.mfcc(y=y3, sr=sr3)
 # mfcc4 =  librosa.feature.mfcc(y=y4, sr=sr4)
@@ -44,13 +48,15 @@ for i in range(0,len(array_y)):
 array_of_array_mfcc = [[]]
 
 for i in range(0, len(array_mfcc)):
+    mfcc_feat = []
     for frame in array_mfcc[i]:
-        array_of_array_mfcc[i].extend(frame)
+        mfcc_feat.extend(frame)
+    array_of_array_mfcc.append(mfcc_feat)
 
 
-# mfcc_feat = []
-# for item in mfcc:
-#     mfcc_feat.extend(item)
+mfcc_feat = []
+for item in mfcc:
+    mfcc_feat.extend(item)
 #
 # mfcc_feat2 = []
 # for item in mfcc2:
@@ -68,18 +74,23 @@ print(array_of_array_mfcc)
 
 # X = [mfcc_feat[:100], mfcc_feat2[:100], mfcc_feat3[:100], mfcc_feat4[:100]]
 array_of_labels = []
-for (dirpath, dirnames, filenames) in walk("./genres"):
+for (dirpath, dirnames, filenames) in walk(path_to_folder):
     array_of_labels.extend([filename.split("/")[-2] for filename in [join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")]])
 
 
-X = [x[0:1000] for x in array_of_array_mfcc]
-Y = [array_of_labels]
+X = [x[0:1000] for x in array_of_array_mfcc if len(x) > 0]
+Y = [[x] for x in array_of_labels]
 
 
 clf = svm.SVC()
 clf.fit(X, Y)
 
-predict_y, predict_sr = librosa.load("./genres/classical/classical.00001.au")
+predict_y, predict_sr = librosa.load("./genres/blues/blues.00020.au")
+predict_y, predict_sr = librosa.load("./genres/disco/disco.00020.au")
+predict_y, predict_sr = librosa.load("./genres/hiphop/hiphop.00020.au")
+predict_y, predict_sr = librosa.load("./genres/jazz/jazz.00020.au")
+predict_y, predict_sr = librosa.load("./genres/rock/rock.00020.au")
+predict_y, predict_sr = librosa.load("./genres/metal/metal.00020.au")
 predict_mfcc =  librosa.feature.mfcc(y=predict_y, sr=predict_sr)
 
 mfcc_predict = []
