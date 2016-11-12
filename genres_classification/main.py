@@ -12,6 +12,16 @@ from IPython.display import Image
 from os import walk
 from os.path import isfile, join
 
+def predict_fun(name_file, clf):
+    predict_y, predict_sr = librosa.load(name_file)
+    predict_mfcc = librosa.feature.mfcc(y=predict_y, sr=predict_sr)
+    mfcc_predict = []
+    for item in predict_mfcc:
+        mfcc_predict.extend(item)
+    print(str(name_file) + str(clf.predict(mfcc_predict[:25000])))
+
+
+
 path_to_folder = "./genres_train"
 
 # 2. Load the audio as a waveform `y`
@@ -78,28 +88,21 @@ for (dirpath, dirnames, filenames) in walk(path_to_folder):
     array_of_labels.extend([filename.split("/")[-2] for filename in [join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")]])
 
 
-X = [x[0:1000] for x in array_of_array_mfcc if len(x) > 0]
+X = [x[0:25000] for x in array_of_array_mfcc if len(x) > 0]
 Y = [[x] for x in array_of_labels]
 
 
 clf = svm.SVC()
 clf.fit(X, Y)
 
-predict_y, predict_sr = librosa.load("./genres/blues/blues.00020.au")
-predict_y, predict_sr = librosa.load("./genres/disco/disco.00020.au")
-predict_y, predict_sr = librosa.load("./genres/hiphop/hiphop.00020.au")
-predict_y, predict_sr = librosa.load("./genres/jazz/jazz.00020.au")
-predict_y, predict_sr = librosa.load("./genres/rock/rock.00020.au")
-predict_y, predict_sr = librosa.load("./genres/metal/metal.00020.au")
-predict_mfcc =  librosa.feature.mfcc(y=predict_y, sr=predict_sr)
+predict_fun("./genres/blues/blues.00020.au", clf)
+predict_fun("./genres/disco/disco.00020.au", clf)
+predict_fun("./genres/hiphop/hiphop.00020.au", clf)
+predict_fun("./genres/jazz/jazz.00020.au", clf)
+predict_fun("./genres/rock/rock.00020.au", clf)
+predict_fun("./genres/metal/metal.00020.au", clf)
 
-mfcc_predict = []
-for item in predict_mfcc:
-    mfcc_predict.extend(item)
-
-print(clf.predict(mfcc_predict[:1000]))
-
-# ---------------------------
+        # ---------------------------
 # # tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
 # chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr)
 #
