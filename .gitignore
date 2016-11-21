@@ -5,6 +5,9 @@
 .idea/workspace.xml
 .idea/tasks.xml
 
+genres_classification/genres/*
+genres_classification/genres_train/*
+
 # Sensitive or high-churn files:
 .idea/dataSources.ids
 .idea/dataSources.xml
