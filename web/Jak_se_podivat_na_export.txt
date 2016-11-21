@@ -1,0 +1,21 @@
+https://dock001.ng.seznam.cz:8887/discover?image=doc.ker/ppchit/auto-export
+
+pro to se podivam ktere servery bezi abych je mohl pres
+
+ssh root@dufek.dev (heslo sklik)
+a pres 
+getlogs _datum_ 
+ziskat
+
+vybrat ppchit-webapp
+
+
+
+
+mvn install
+mvn clean install -U
+
+
+na https://admin.sklik.cz/tools
+ppchit.sklik
+sklik2015
