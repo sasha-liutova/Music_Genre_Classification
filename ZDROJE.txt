@@ -1,0 +1,14 @@
+ZDROJE
+
+http://marsyasweb.appspot.com/download/data_sets/
+https://github.com/librosa/librosa
+http://scikit-learn.org/stable/
+http://flask.pocoo.org
+
+LIBROSA PDF
+http://www.mattmcvicar.com/wp-content/uploads/2015/11/librosa.pdf
+https://brage.bibsys.no/xmlui/bitstream/handle/11250/252710/454083_FULLTEXT01.pdf?sequence=1&isAllowed=y
+
+MUSIC CLASSIFICATION
+http://www.nyu.edu/classes/bello/MIR_files/8-classification.pdf
+http://ismir2011.ismir.net/papers/PS6-7.pdf

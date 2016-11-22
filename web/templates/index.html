@@ -1,0 +1,45 @@
+﻿{% extends "layouts/layout1.html" %}
+{% block title %}
+Project VMM
+{% endblock %}
+{% block content %}
+    <!-- Header -->
+<header>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="intro-text">
+                    <span class="name">Project VMM</span>
+                    <hr class="star-light">
+                    <span class="skills">Similarity music genres retrieval</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+<!-- Portfolio Grid Section -->
+<section id="portfolio">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <h2>Choose a file</h2>
+                <hr class="star-primary">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-4 portfolio-item"> </div>
+            <div class="col-sm-4 portfolio-item">
+                <form action="" method=post enctype=multipart/form-data>
+                    <label class="btn btn-default btn-file "> <input type=file name=file> </label>
+                    <p></p>  
+                    <input class="btn btn-default btn-file" type=submit value=Upload >
+                </form>
+            </div>
+            <div class="col-sm-4 portfolio-item"></div>
+
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
