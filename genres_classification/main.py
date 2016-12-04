@@ -1,100 +1,90 @@
-# Beat tracking example
+
+# from scikits.talkbox.features import mfcc
 import librosa
 from sklearn import svm
 from os import walk
 from os.path import isfile, join
 from sklearn.externals import joblib
+import numpy as np
 
 path_to_folder = "./genres_train"
 
-import warnings
+def extract_genre(filenames, dirpath):
+    return [filename.split("/")[-2] for filename in [join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")]]
 
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore",category=DeprecationWarning)
-
-
-def predict_fun(name_file, clf):
+def predict_genre(name_file, clf):
     predict_y, predict_sr = librosa.load(name_file)
     predict_mfcc = librosa.feature.mfcc(y=predict_y, sr=predict_sr)
     mfcc_predict = []
     for item in predict_mfcc:
         mfcc_predict.extend(item)
-    # print(str(name_file) + str(clf.decision_function(mfcc_predict[:25000])))
-    print(str(name_file) + str(clf.predict(mfcc_predict[:25000])))
+    return clf.predict(np.reshape(mfcc_predict[:25000], (1, -1)))
 
 
 def train_model():
 
-    # 2. Load the audio as a waveform `y`
-    #    Store the sampling rate as `sr`
-    array_of_path = []
+    # Form paths for files from directory path_to_folder
+
+    paths = []
     for (dirpath, dirnames, filenames) in walk(path_to_folder):
-        array_of_path.extend([join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")])
+        paths.extend([join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")])
+
+    # Load the audio as a waveform `y`
+    # Store the sampling rate as `sr`
 
     array_y = []
     array_sr = []
 
-    for path in array_of_path:
+    for path in paths:
         y, sr = librosa.load(path=path)
-        array_y.extend([y])
-        array_sr.extend([sr])
+        array_y.append(y)
+        array_sr.append(sr)
 
-    array_mfcc = []
 
-    librosa.feature.mfcc(array_y[0], array_sr[0])
+    # Extract features using MFCC
 
+    features_mfcc = []
     for i in range(0,len(array_y)):
-        array_mfcc.append(librosa.feature.mfcc(y=array_y[i], sr=array_sr[i]))
+        current_features = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i])
+        features_flat = []
+        for frame in current_features:
+            features_flat.extend(frame)
+        features_mfcc.append(features_flat)
 
+    # Extract label for each file
 
-    array_of_array_mfcc = [[]]
-
-    for i in range(0, len(array_mfcc)):
-        mfcc_feat = []
-        for frame in array_mfcc[i]:
-            mfcc_feat.extend(frame)
-        array_of_array_mfcc.append(mfcc_feat)
-
-
-    print(array_of_array_mfcc)
-
-    # X = [mfcc_feat[:100], mfcc_feat2[:100], mfcc_feat3[:100], mfcc_feat4[:100]]
-    array_of_labels = []
+    labels = []
     for (dirpath, dirnames, filenames) in walk(path_to_folder):
-        array_of_labels.extend([filename.split("/")[-2] for filename in [join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")]])
+        labels.extend(extract_genre(filenames, dirpath))
 
+    X = [x[0:25000] for x in features_mfcc]
 
-    X = [x[0:25000] for x in array_of_array_mfcc if len(x) > 0]
-    Y = [[x] for x in array_of_labels]
-
+    # Create a classification model using SVM
 
     clf = svm.SVC()
-    clf.fit(X, Y)
+    clf.fit(X, labels)
 
     return clf
 
 
-# MAIN PART
-choose = int(input("Do you want to train new model[1] or use old one[0]"))
-if choose == 1:
-    clf = train_model()
-    joblib.dump(clf, 'train_model.pkl')
-else:
-    try:
-        clf = joblib.load('train_model.pkl')
-    except FileNotFoundError:
+def main():
+    choose = int(input("Do you want to train new model[1] or use old one[0]"))
+    if choose == 1:
         clf = train_model()
+        joblib.dump(clf, 'train_model.pkl')
+    else:
+        try:
+            clf = joblib.load('train_model.pkl')
+        except FileNotFoundError:
+            clf = train_model()
 
-import os
-array_of_labels = dirlist = [ item for item in os.listdir(path_to_folder) if os.path.isdir(os.path.join(path_to_folder, item)) ]
-print(array_of_labels)
+    print("./genres/blues/blues.00020.au", predict_genre("./genres/blues/blues.00020.au", clf))
+    print("./genres/disco/disco.00020.au", predict_genre("./genres/disco/disco.00020.au", clf))
+    print("./genres/hiphop/hiphop.00020.au", predict_genre("./genres/hiphop/hiphop.00020.au", clf))
+    print("./genres/jazz/jazz.00020.au", predict_genre("./genres/jazz/jazz.00020.au", clf))
+    print("./genres/rock/rock.00020.au", predict_genre("./genres/rock/rock.00020.au", clf))
+    print("./genres/metal/metal.00020.au", predict_genre("./genres/metal/metal.00020.au", clf))
 
-print(clf)
 
-predict_fun("./genres/blues/blues.00020.au", clf)
-predict_fun("./genres/disco/disco.00020.au", clf)
-predict_fun("./genres/hiphop/hiphop.00020.au", clf)
-predict_fun("./genres/jazz/jazz.00020.au", clf)
-predict_fun("./genres/rock/rock.00020.au", clf)
-predict_fun("./genres/metal/metal.00020.au", clf)
-
+if __name__ == "__main__":
+    main()
