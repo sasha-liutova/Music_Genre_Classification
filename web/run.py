@@ -34,9 +34,18 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return redirect(url_for('uploaded_file',
-                                    filename=filename))
+            return redirect(url_for('show_result', name = filename))
+            #return redirect(url_for('uploaded_file', filename=filename))
+            
+
     return render_template('index.html')
+
+@app.route('/result/<name>')
+def show_result(name):
+    labels = ['January',"February","March","April","May","June","July","August"]
+    values = [10,9,8,7,6,4,7,8]
+    colors = [ "#F7464A", "#46BFBD", "#FDB45C", "#FEDCBA","#ABCDEF", "#DDDDDD", "#ABCABC"  ]
+    return render_template('result.html', filename = name, values=values, labels=labels, colors=colors)
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):

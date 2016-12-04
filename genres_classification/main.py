@@ -1,14 +1,18 @@
 
 # from scikits.talkbox.features import mfcc
+# http://pydub.com/ for slice audio
 import librosa
 from sklearn import svm
 from os import walk
 from os.path import isfile, join
 from sklearn.externals import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
 import numpy as np
 import copy
 
-path_to_folder = "./genres_train"
+path_to_folder = "./genres"
+n_mfcc = 240
 
 def extract_genre(filenames, dirpath):
     return [filename.split("/")[-2] for filename in [join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")]]
@@ -36,7 +40,7 @@ def extract_mean_frame(mfcc):
 
 def predict_genre(name_file, clf, min_length):
     predict_y, predict_sr = librosa.load(name_file)
-    current_features = librosa.feature.mfcc(y=predict_y, sr=predict_sr, n_mfcc=60)
+    current_features = librosa.feature.mfcc(y=predict_y, sr=predict_sr, n_mfcc=n_mfcc)
     mean_frame = extract_mean_frame(current_features)
     # features_mfcc_cut = [x[:min_length-1] for x in predict_mfcc]
     # return clf.predict(np.reshape(predict_mfcc, (1, -1)))
@@ -67,7 +71,7 @@ def train_model():
 
     features_mfcc = []
     for i in range(0,len(array_y)):
-        current_features = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i], n_mfcc=60)
+        current_features = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i], n_mfcc=n_mfcc)
         # current_features_preprocessed = preprocess_mfcc(current_features)
         # features_flat = []
         # for frame in current_features:
@@ -88,6 +92,10 @@ def train_model():
     # Create a classification model using SVM
 
     clf = svm.SVC()
+
+    scores = cross_val_score(clf,features_mfcc_cut , labels, cv=5)
+    print("Scores:\n", scores)
+
     clf.fit(features_mfcc_cut, labels)
 
     return clf, min_length
@@ -105,6 +113,8 @@ def main():
     #         clf = train_model()
 
     clf , min_length = train_model()
+
+    print("MANUAL TESTING:")
 
     print("./genres/blues/blues.00020.au", predict_genre("./genres/blues/blues.00020.au", clf, min_length))
     print("./genres/disco/disco.00020.au", predict_genre("./genres/disco/disco.00020.au", clf, min_length))
