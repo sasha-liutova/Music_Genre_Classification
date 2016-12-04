@@ -12,3 +12,8 @@ https://brage.bibsys.no/xmlui/bitstream/handle/11250/252710/454083_FULLTEXT01.pd
 MUSIC CLASSIFICATION
 http://www.nyu.edu/classes/bello/MIR_files/8-classification.pdf
 http://ismir2011.ismir.net/papers/PS6-7.pdf
+
+http://cs229.stanford.edu/proj2011/HaggbladeHongKao-MusicGenreClassification.pdf
+
+MPEG 7 and LIBRARY
+http://www.ntnu.edu/documents/1001201110/1266017954/DAFx-15_submission_43_v2.pdf
