@@ -34,13 +34,13 @@ def extract_mean_frame(mfcc):
     return features_sum
 
 
-def predict_genre(name_file, clf):
+def predict_genre(name_file, clf, min_length):
     predict_y, predict_sr = librosa.load(name_file)
-    predict_mfcc = librosa.feature.mfcc(y=predict_y, sr=predict_sr)
-    mfcc_predict = []
-    for item in predict_mfcc:
-        mfcc_predict.extend(item)
-    return clf.predict(np.reshape(mfcc_predict[:25000], (1, -1)))
+    current_features = librosa.feature.mfcc(y=predict_y, sr=predict_sr, n_mfcc=60)
+    mean_frame = extract_mean_frame(current_features)
+    # features_mfcc_cut = [x[:min_length-1] for x in predict_mfcc]
+    # return clf.predict(np.reshape(predict_mfcc, (1, -1)))
+    return clf.predict(np.reshape(mean_frame[:min_length-1], (1, -1)))
 
 
 def train_model():
@@ -90,7 +90,7 @@ def train_model():
     clf = svm.SVC()
     clf.fit(features_mfcc_cut, labels)
 
-    return clf
+    return clf, min_length
 
 
 def main():
@@ -104,14 +104,28 @@ def main():
     #     except FileNotFoundError:
     #         clf = train_model()
 
-    clf = train_model()
+    clf , min_length = train_model()
 
-    print("./genres/blues/blues.00020.au", predict_genre("./genres/blues/blues.00020.au", clf))
-    print("./genres/disco/disco.00020.au", predict_genre("./genres/disco/disco.00020.au", clf))
-    print("./genres/hiphop/hiphop.00020.au", predict_genre("./genres/hiphop/hiphop.00020.au", clf))
-    print("./genres/jazz/jazz.00020.au", predict_genre("./genres/jazz/jazz.00020.au", clf))
-    print("./genres/rock/rock.00020.au", predict_genre("./genres/rock/rock.00020.au", clf))
-    print("./genres/metal/metal.00020.au", predict_genre("./genres/metal/metal.00020.au", clf))
+    print("./genres/blues/blues.00020.au", predict_genre("./genres/blues/blues.00020.au", clf, min_length))
+    print("./genres/disco/disco.00020.au", predict_genre("./genres/disco/disco.00020.au", clf, min_length))
+    print("./genres/hiphop/hiphop.00020.au", predict_genre("./genres/hiphop/hiphop.00020.au", clf, min_length))
+    print("./genres/jazz/jazz.00020.au", predict_genre("./genres/jazz/jazz.00020.au", clf, min_length))
+    print("./genres/rock/rock.00020.au", predict_genre("./genres/rock/rock.00020.au", clf, min_length))
+    print("./genres/metal/metal.00020.au", predict_genre("./genres/metal/metal.00020.au", clf, min_length))
+
+    print("./genres/blues/blues.00021.au", predict_genre("./genres/blues/blues.00021.au", clf, min_length))
+    print("./genres/disco/disco.00021.au", predict_genre("./genres/disco/disco.00021.au", clf, min_length))
+    print("./genres/hiphop/hiphop.00021.au", predict_genre("./genres/hiphop/hiphop.00021.au", clf, min_length))
+    print("./genres/jazz/jazz.00021.au", predict_genre("./genres/jazz/jazz.00021.au", clf, min_length))
+    print("./genres/rock/rock.00021.au", predict_genre("./genres/rock/rock.00021.au", clf, min_length))
+    print("./genres/metal/metal.00021.au", predict_genre("./genres/metal/metal.00021.au", clf, min_length))
+
+    print("./genres/blues/blues.00022.au", predict_genre("./genres/blues/blues.00022.au", clf, min_length))
+    print("./genres/disco/disco.00022.au", predict_genre("./genres/disco/disco.00022.au", clf, min_length))
+    print("./genres/hiphop/hiphop.00022.au", predict_genre("./genres/hiphop/hiphop.00022.au", clf, min_length))
+    print("./genres/jazz/jazz.00022.au", predict_genre("./genres/jazz/jazz.00022.au", clf, min_length))
+    print("./genres/rock/rock.00022.au", predict_genre("./genres/rock/rock.00022.au", clf, min_length))
+    print("./genres/metal/metal.00022.au", predict_genre("./genres/metal/metal.00022.au", clf, min_length))
 
 
 if __name__ == "__main__":
