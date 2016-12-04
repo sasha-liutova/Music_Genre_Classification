@@ -41,18 +41,20 @@ def train_model():
 
     array_mfcc = []
 
-    librosa.feature.mfcc(array_y[0], array_sr[0])
-
     for i in range(0,len(array_y)):
         array_mfcc.append(librosa.feature.mfcc(y=array_y[i], sr=array_sr[i]))
-
 
     array_of_array_mfcc = [[]]
 
     for i in range(0, len(array_mfcc)):
-        mfcc_feat = []
+        mfcc_feat = [0.0] * len(max(array_mfcc[i], key=len))
         for frame in array_mfcc[i]:
-            mfcc_feat.extend(frame)
+            for x in range(0, len(mfcc_feat[x])):
+                mfcc_feat[x] = mfcc_feat[x] + frame[x]
+
+        # for x in range(0, array_mfcc[i]):
+        #     mfcc_feat[x] /= float(len(frame))
+
         array_of_array_mfcc.append(mfcc_feat)
 
 
