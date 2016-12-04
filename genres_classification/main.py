@@ -1,8 +1,7 @@
-# Beat tracking example
 from __future__ import print_function
 import matplotlib.pyplot as plt
 import librosa
-from dtw import dtw
+# from dtw import dtw
 import matplotlib.pyplot as plt
 import numpy as np
 import librosa
@@ -14,13 +13,13 @@ from os.path import isfile, join
 from sklearn.externals import joblib
 
 
-def predict_fun(name_file, clf):
+def predict_genre(name_file, clf):
     predict_y, predict_sr = librosa.load(name_file)
     predict_mfcc = librosa.feature.mfcc(y=predict_y, sr=predict_sr)
     mfcc_predict = []
     for item in predict_mfcc:
         mfcc_predict.extend(item)
-    print(str(name_file) + str(clf.predict(mfcc_predict[:25000])))
+    return clf.predict(mfcc_predict[:25000])
 
 
 def train_model():
@@ -28,14 +27,14 @@ def train_model():
 
     # 2. Load the audio as a waveform `y`
     #    Store the sampling rate as `sr`
-    array_of_path = []
+    array_of_paths = []
     for (dirpath, dirnames, filenames) in walk(path_to_folder):
-        array_of_path.extend([join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")])
+        array_of_paths.extend([join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")])
 
     array_y = []
     array_sr = []
 
-    for path in array_of_path:
+    for path in array_of_paths:
         y, sr = librosa.load(path=path)
         array_y.extend([y])
         array_sr.extend([sr])
@@ -75,22 +74,23 @@ def train_model():
     return clf
 
 
-# MAIN PART
-choose = int(input("Do you want to train new model[1] or use old one[0]"))
-if choose == 1:
-    clf = train_model()
-    joblib.dump(clf, 'train_model.pkl')
-else:
-    try:
-        clf = joblib.load('train_model.pkl')
-    except FileNotFoundError:
+def main():
+    choose = int(input("Do you want to train new model[1] or use old one[0]"))
+    if choose == 1:
         clf = train_model()
+        joblib.dump(clf, 'train_model.pkl')
+    else:
+        try:
+            clf = joblib.load('train_model.pkl')
+        except FileNotFoundError:
+            clf = train_model()
 
+    print("./genres/blues/blues.00020.au", predict_genre("./genres/blues/blues.00020.au", clf))
+    print("./genres/disco/disco.00020.au", predict_genre("./genres/disco/disco.00020.au", clf))
+    print("./genres/hiphop/hiphop.00020.au", predict_genre("./genres/hiphop/hiphop.00020.au", clf))
+    print("./genres/jazz/jazz.00020.au", predict_genre("./genres/jazz/jazz.00020.au", clf))
+    print("./genres/rock/rock.00020.au", predict_genre("./genres/rock/rock.00020.au", clf))
+    print("./genres/metal/metal.00020.au", predict_genre("./genres/metal/metal.00020.au", clf))
 
-predict_fun("./genres/blues/blues.00020.au", clf)
-predict_fun("./genres/disco/disco.00020.au", clf)
-predict_fun("./genres/hiphop/hiphop.00020.au", clf)
-predict_fun("./genres/jazz/jazz.00020.au", clf)
-predict_fun("./genres/rock/rock.00020.au", clf)
-predict_fun("./genres/metal/metal.00020.au", clf)
-
+if __name__ == "__main__":
+    main()
