@@ -11,8 +11,17 @@ from sklearn.model_selection import cross_val_score
 import numpy as np
 import copy
 
-path_to_folder = "./genres"
-n_mfcc = 240
+path_to_folder = "./genres_train"
+glob_n_mfcc = 20
+glob_sr = 22050
+glob_duration = 30.0
+glob_n_vectors = 13
+
+def flaten_matrix(matrix):
+    concat = []
+    for row in matrix:
+        concat.extend(row)
+    return concat
 
 def extract_genre(filenames, dirpath):
     return [filename.split("/")[-2] for filename in [join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")]]
@@ -24,27 +33,11 @@ def preprocess_mfcc(mfcc):
         mfcc_cp[:,i] = mfcc_cp[:,i]/np.max(np.abs(mfcc_cp[:,i]))
     return mfcc_cp
 
-def extract_mean_frame(mfcc):
-    features_sum = [0 for i in range(len(mfcc[0]))]
-    for frame in mfcc:
-        index=0
-        for feature in frame:
-            features_sum[index] += feature
-            index += 1
 
-    for i in range(len(mfcc[0])):
-        features_sum[i] = features_sum[i]/len(mfcc)
-
-    return features_sum
-
-
-def predict_genre(name_file, clf, min_length):
-    predict_y, predict_sr = librosa.load(name_file)
-    current_features = librosa.feature.mfcc(y=predict_y, sr=predict_sr, n_mfcc=n_mfcc)
-    mean_frame = extract_mean_frame(current_features)
-    # features_mfcc_cut = [x[:min_length-1] for x in predict_mfcc]
-    # return clf.predict(np.reshape(predict_mfcc, (1, -1)))
-    return clf.predict(np.reshape(mean_frame[:min_length-1], (1, -1)))
+def predict_genre(name_file, clf):
+    predict_y, predict_sr = librosa.load(name_file, sr=glob_sr, duration=glob_duration)
+    current_features = librosa.feature.mfcc(y=predict_y, sr=predict_sr, n_mfcc=glob_n_mfcc)[:glob_n_vectors]
+    return clf.predict(np.reshape(current_features, (1, -1)))
 
 
 def train_model():
@@ -62,7 +55,7 @@ def train_model():
     array_sr = []
 
     for path in paths:
-        y, sr = librosa.load(path=path)
+        y, sr = librosa.load(path=path, sr=glob_sr, duration=glob_duration)
         array_y.append(y)
         array_sr.append(sr)
 
@@ -70,18 +63,9 @@ def train_model():
     # Extract features using MFCC
 
     features_mfcc = []
-    for i in range(0,len(array_y)):
-        current_features = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i], n_mfcc=n_mfcc)
-        # current_features_preprocessed = preprocess_mfcc(current_features)
-        # features_flat = []
-        # for frame in current_features:
-        #     features_flat.extend(frame)
-        # features_mfcc.append(features_flat)
-        mean_frame = extract_mean_frame(current_features)
-        features_mfcc.append(mean_frame)
-
-    min_length = min([len(x) for x in features_mfcc])
-    features_mfcc_cut = [x[:min_length-1] for x in features_mfcc]
+    for i in range(len(array_y)):
+        current_features = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i], n_mfcc=glob_n_mfcc)[:glob_n_vectors] # take first 13 vectors
+        features_mfcc.append(flaten_matrix(current_features)) # add obtained vectors in row
 
     # Extract label for each file
 
@@ -93,12 +77,12 @@ def train_model():
 
     clf = svm.SVC()
 
-    scores = cross_val_score(clf,features_mfcc_cut , labels, cv=5)
-    print("Scores:\n", scores)
+    # scores = cross_val_score(clf,features_mfcc_cut , labels, cv=5)
+    # print("Scores:\n", scores)
 
-    clf.fit(features_mfcc_cut, labels)
+    clf.fit(features_mfcc, labels)
 
-    return clf, min_length
+    return clf
 
 
 def main():
@@ -112,30 +96,38 @@ def main():
     #     except FileNotFoundError:
     #         clf = train_model()
 
-    clf , min_length = train_model()
+    clf = train_model()
 
     print("MANUAL TESTING:")
 
-    print("./genres/blues/blues.00020.au", predict_genre("./genres/blues/blues.00020.au", clf, min_length))
-    print("./genres/disco/disco.00020.au", predict_genre("./genres/disco/disco.00020.au", clf, min_length))
-    print("./genres/hiphop/hiphop.00020.au", predict_genre("./genres/hiphop/hiphop.00020.au", clf, min_length))
-    print("./genres/jazz/jazz.00020.au", predict_genre("./genres/jazz/jazz.00020.au", clf, min_length))
-    print("./genres/rock/rock.00020.au", predict_genre("./genres/rock/rock.00020.au", clf, min_length))
-    print("./genres/metal/metal.00020.au", predict_genre("./genres/metal/metal.00020.au", clf, min_length))
 
-    print("./genres/blues/blues.00021.au", predict_genre("./genres/blues/blues.00021.au", clf, min_length))
-    print("./genres/disco/disco.00021.au", predict_genre("./genres/disco/disco.00021.au", clf, min_length))
-    print("./genres/hiphop/hiphop.00021.au", predict_genre("./genres/hiphop/hiphop.00021.au", clf, min_length))
-    print("./genres/jazz/jazz.00021.au", predict_genre("./genres/jazz/jazz.00021.au", clf, min_length))
-    print("./genres/rock/rock.00021.au", predict_genre("./genres/rock/rock.00021.au", clf, min_length))
-    print("./genres/metal/metal.00021.au", predict_genre("./genres/metal/metal.00021.au", clf, min_length))
+    print("./genres/blues/blues.00020.au", predict_genre("./genres/blues/blues.00020.au", clf))
+    print("./genres/disco/disco.00020.au", predict_genre("./genres/disco/disco.00020.au", clf))
+    print("./genres/hiphop/hiphop.00020.au", predict_genre("./genres/hiphop/hiphop.00020.au", clf))
+    print("./genres/jazz/jazz.00020.au", predict_genre("./genres/jazz/jazz.00020.au", clf))
+    print("./genres/rock/rock.00020.au", predict_genre("./genres/rock/rock.00020.au", clf))
+    print("./genres/metal/metal.00020.au", predict_genre("./genres/metal/metal.00020.au", clf))
 
-    print("./genres/blues/blues.00022.au", predict_genre("./genres/blues/blues.00022.au", clf, min_length))
-    print("./genres/disco/disco.00022.au", predict_genre("./genres/disco/disco.00022.au", clf, min_length))
-    print("./genres/hiphop/hiphop.00022.au", predict_genre("./genres/hiphop/hiphop.00022.au", clf, min_length))
-    print("./genres/jazz/jazz.00022.au", predict_genre("./genres/jazz/jazz.00022.au", clf, min_length))
-    print("./genres/rock/rock.00022.au", predict_genre("./genres/rock/rock.00022.au", clf, min_length))
-    print("./genres/metal/metal.00022.au", predict_genre("./genres/metal/metal.00022.au", clf, min_length))
+    # print("./genres/blues/blues.00020.au", predict_genre("./genres/blues/blues.00020.au", clf, min_length))
+    # print("./genres/disco/disco.00020.au", predict_genre("./genres/disco/disco.00020.au", clf, min_length))
+    # print("./genres/hiphop/hiphop.00020.au", predict_genre("./genres/hiphop/hiphop.00020.au", clf, min_length))
+    # print("./genres/jazz/jazz.00020.au", predict_genre("./genres/jazz/jazz.00020.au", clf, min_length))
+    # print("./genres/rock/rock.00020.au", predict_genre("./genres/rock/rock.00020.au", clf, min_length))
+    # print("./genres/metal/metal.00020.au", predict_genre("./genres/metal/metal.00020.au", clf, min_length))
+
+    # print("./genres/blues/blues.00021.au", predict_genre("./genres/blues/blues.00021.au", clf, min_length))
+    # print("./genres/disco/disco.00021.au", predict_genre("./genres/disco/disco.00021.au", clf, min_length))
+    # print("./genres/hiphop/hiphop.00021.au", predict_genre("./genres/hiphop/hiphop.00021.au", clf, min_length))
+    # print("./genres/jazz/jazz.00021.au", predict_genre("./genres/jazz/jazz.00021.au", clf, min_length))
+    # print("./genres/rock/rock.00021.au", predict_genre("./genres/rock/rock.00021.au", clf, min_length))
+    # print("./genres/metal/metal.00021.au", predict_genre("./genres/metal/metal.00021.au", clf, min_length))
+    #
+    # print("./genres/blues/blues.00022.au", predict_genre("./genres/blues/blues.00022.au", clf, min_length))
+    # print("./genres/disco/disco.00022.au", predict_genre("./genres/disco/disco.00022.au", clf, min_length))
+    # print("./genres/hiphop/hiphop.00022.au", predict_genre("./genres/hiphop/hiphop.00022.au", clf, min_length))
+    # print("./genres/jazz/jazz.00022.au", predict_genre("./genres/jazz/jazz.00022.au", clf, min_length))
+    # print("./genres/rock/rock.00022.au", predict_genre("./genres/rock/rock.00022.au", clf, min_length))
+    # print("./genres/metal/metal.00022.au", predict_genre("./genres/metal/metal.00022.au", clf, min_length))
 
 
 if __name__ == "__main__":
