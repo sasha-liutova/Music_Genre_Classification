@@ -2,8 +2,22 @@ from flask import Flask, render_template, request, request, redirect, url_for, s
 import os
 from werkzeug.utils import secure_filename
 
+# for feature extraction and prediction
+from sklearn.neighbors import KNeighborsClassifier
+import librosa
+import numpy as np
+from sklearn.externals import joblib
+
+# We cannot import pyhon file from different folder by default
+# This is run-time way to do so
+import sys
+sys.path.append('./../genres_classification')
+# Importin main project from folder genres_classification
+import main
+
+
 UPLOAD_FOLDER = './'
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'au'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -42,10 +56,15 @@ def upload_file():
 
 @app.route('/result/<name>')
 def show_result(name):
-    labels = ['January',"February","March","April","May","June","July","August"]
-    values = [10,9,8,7,6,4,7,8]
-    colors = [ "#F7464A", "#46BFBD", "#FDB45C", "#FEDCBA","#ABCDEF", "#DDDDDD", "#ABCABC"  ]
-    return render_template('result.html', filename = name, values=values, labels=labels, colors=colors)
+
+    clf = joblib.load('train_model_5-knn_44.pkl')
+    result = main.predict_genre(name_file = name, clf = clf)
+    labels = ["Blues", "Classical", "Country", "Disco", "Hip hop", "Jazz", "Metal", "Pop", "Reggae", "Rock"]
+    values = [int(x*10) for x in result[0]]
+    colors = [ '#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c',
+              '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928'  ]
+
+    return render_template('result.html', filename = labels[result.argmax()], values=values, labels=labels, colors=colors)
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):

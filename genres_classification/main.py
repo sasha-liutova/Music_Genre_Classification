@@ -103,7 +103,7 @@ def extract_features(paths):
             average = 0
             for y in range(40): # 40 is approximately amount of vector values for one second
                 average += mean_mfcc[y + 40*x]
-                reduced_mfcc.append(average / 40.0)
+            reduced_mfcc.append(average / 40.0)
 
         features_mfcc.append(flaten_matrix(reduced_mfcc))  # add obtained vectors in row
 
@@ -118,7 +118,7 @@ def predict_genre(name_file, clf):
 
     features = extract_features([name_file])[0]
 
-    return clf.predict(np.reshape(features, (1, -1)))
+    return clf.predict_proba(np.reshape(features, (1, -1)))
 
 
 def train_model(folder):
