@@ -33,6 +33,8 @@ def flaten_matrix(matrix):
         concat.extend(row)
     return concat
 
+def extract_min_max_vectors(matrix):
+    pass
 
 def paths_from_folder(folder):
     """
@@ -204,13 +206,16 @@ def visualize_data(folder):
 
         pickle.dump(features_mfcc, open("features.py", "wb"))
 
+    tsne = TSNE(n_components=2, random_state=0)
+    transformed_features = tsne.fit_transform(features_mfcc)
+
     # Extract label for each file
 
     labels = []
     for (dirpath, dirnames, filenames) in walk(folder):
         labels.extend(extract_genre(filenames, dirpath))
 
-    plot_data(labels, features_mfcc)
+    plot_data(labels, transformed_features)
 
 def main():
     # choose = int(input("Do you want to train new model[1] or use old one[0]"))
