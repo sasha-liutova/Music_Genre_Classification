@@ -7,6 +7,10 @@
 
 genres_classification/genres/*
 genres_classification/genres_train/*
+genres_classification/genres_split/*
+*.ipynb
+*.pdf
+*.au
 
 # Sensitive or high-churn files:
 .idea/dataSources.ids

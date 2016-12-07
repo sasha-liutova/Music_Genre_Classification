@@ -14,6 +14,8 @@ from sklearn.preprocessing import scale
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import pickle
+from sklearn.neighbors import KNeighborsClassifier
+
 
 test_path = './genres_train'
 glob_path_train = './genres_split/train'
@@ -88,9 +90,22 @@ def extract_features(paths):
 
     features_mfcc = []
     for i in range(len(array_y)):
-        current_features = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i], n_mfcc=glob_n_mfcc)[
-                           :glob_n_vectors]  # take first 13 vectors
-        features_mfcc.append(flaten_matrix(current_features))  # add obtained vectors in row
+
+        mfcc = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i], n_mfcc=glob_n_mfcc)
+
+        mean_mfcc = []
+        reduced_mfcc = []
+
+        for x in range(len(mfcc[0])):
+            mean_mfcc.append(mfcc[:,x])
+
+        for x in range(int(glob_duration)):
+            average = 0
+            for y in range(40): # 40 is approximately amount of vector values for one second
+                average += mean_mfcc[y + 40*x]
+                reduced_mfcc.append(average / 40.0)
+
+        features_mfcc.append(flaten_matrix(reduced_mfcc))  # add obtained vectors in row
 
     return features_mfcc
 
@@ -119,9 +134,9 @@ def train_model(folder):
     for (dirpath, dirnames, filenames) in walk(folder):
         labels.extend(extract_genre(filenames, dirpath))
 
-    # Create a classification model using SVM
+    # Create a classification model using kNN
 
-    clf = svm.SVC()
+    clf = KNeighborsClassifier(n_neighbors=5)
 
     # scores = cross_val_score(clf,features_mfcc_cut , labels, cv=5)
     # print("Scores:\n", scores)
