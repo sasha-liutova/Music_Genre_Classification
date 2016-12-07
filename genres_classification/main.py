@@ -72,22 +72,7 @@ def extract_genres_from_paths(files):
 #     return mfcc_cp
 
 
-def predict_genre(name_file, clf):
-    """
-    :param name_file:
-    :param clf: model
-    :return: predicted genre (string)
-    """
-    predict_y, predict_sr = librosa.load(name_file, sr=glob_sr, duration=glob_duration)
-    current_features = librosa.feature.mfcc(y=predict_y, sr=predict_sr, n_mfcc=glob_n_mfcc)[:glob_n_vectors]
-    return clf.predict(np.reshape(current_features, (1, -1)))
-
-
-def train_model(folder):
-
-    # Form paths for files from directory path_to_folder
-    paths = paths_from_folder(folder)
-
+def extract_features(paths):
     # Load the audio as a waveform `y`
     # Store the sampling rate as `sr`
 
@@ -99,13 +84,34 @@ def train_model(folder):
         array_y.append(y)
         array_sr.append(sr)
 
-
     # Extract features using MFCC
 
     features_mfcc = []
     for i in range(len(array_y)):
-        current_features = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i], n_mfcc=glob_n_mfcc)[:glob_n_vectors] # take first 13 vectors
-        features_mfcc.append(flaten_matrix(current_features)) # add obtained vectors in row
+        current_features = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i], n_mfcc=glob_n_mfcc)[
+                           :glob_n_vectors]  # take first 13 vectors
+        features_mfcc.append(flaten_matrix(current_features))  # add obtained vectors in row
+
+    return features_mfcc
+
+def predict_genre(name_file, clf):
+    """
+    :param name_file:
+    :param clf: model
+    :return: predicted genre (string)
+    """
+
+    features = extract_features([name_file])[0]
+
+    return clf.predict(np.reshape(features, (1, -1)))
+
+
+def train_model(folder):
+
+    # Form paths for files from directory path_to_folder
+    paths = paths_from_folder(folder)
+
+    features = extract_features(paths)
 
     # Extract label for each file
 
@@ -119,10 +125,10 @@ def train_model(folder):
 
     # scores = cross_val_score(clf,features_mfcc_cut , labels, cv=5)
     # print("Scores:\n", scores)
-    for vector, file in zip(features_mfcc, paths):
+    for vector, file in zip(features, paths): # REMOVE THIS !!!!!!!!!!!!!!!!!!!!!!!!!!!
         print(file, len(vector))
 
-    clf.fit(features_mfcc, labels)
+    clf.fit(features, labels)
 
     return clf
 
@@ -151,10 +157,6 @@ def plot_data(labels, features):
             unique_clusters.append(l)
     n_labels = len(unique_clusters)
 
-    # # normalizing clusters' numbers for colors assigning
-    # minimum = min(unique_clusters)
-    # labels_normalized = [x - minimum for x in labels]
-
     # creating structure for displaying, containing pairs of coordinates and cluster numbers
     plot_data = []
     for label, point in zip(labels, features):
@@ -180,34 +182,17 @@ def plot_data(labels, features):
 def visualize_data(folder):
 
     try:
-        features_mfcc = pickle.load(open("features.py", "rb"))
+        features = pickle.load(open("features.py", "rb"))
     except FileNotFoundError:
         # Form paths for files from directory path_to_folder
         paths = paths_from_folder(folder)
 
-        # Load the audio as a waveform `y`
-        # Store the sampling rate as `sr`
+        features = extract_features(paths)
 
-        array_y = []
-        array_sr = []
-
-        for path in paths:
-            y, sr = librosa.load(path=path, sr=glob_sr, duration=glob_duration)
-            array_y.append(y)
-            array_sr.append(sr)
-
-        # Extract features using MFCC
-
-        features_mfcc = []
-        for i in range(len(array_y)):
-            current_features = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i], n_mfcc=glob_n_mfcc)[
-                               :glob_n_vectors]  # take first 13 vectors
-            features_mfcc.append(flaten_matrix(current_features))  # add obtained vectors in row
-
-        pickle.dump(features_mfcc, open("features.py", "wb"))
+        pickle.dump(features, open("features.py", "wb"))
 
     tsne = TSNE(n_components=2, random_state=0)
-    transformed_features = tsne.fit_transform(features_mfcc)
+    transformed_features = tsne.fit_transform(features)
 
     # Extract label for each file
 
@@ -218,19 +203,19 @@ def visualize_data(folder):
     plot_data(labels, transformed_features)
 
 def main():
-    # choose = int(input("Do you want to train new model[1] or use old one[0]"))
-    # if choose == 1:
-    #     clf = train_model(glob_path_train)
-    #     joblib.dump(clf, 'train_model.pkl')
-    # else:
-    #     try:
-    #         clf = joblib.load('train_model.pkl')
-    #     except FileNotFoundError:
-    #         clf = train_model(glob_path_train)
+    choose = int(input("Do you want to train new model[1] or use old one[0]"))
+    if choose == 1:
+        clf = train_model(glob_path_train)
+        joblib.dump(clf, 'train_model.pkl')
+    else:
+        try:
+            clf = joblib.load('train_model.pkl')
+        except FileNotFoundError:
+            clf = train_model(glob_path_train)
 
-    visualize_data(glob_path_train)
+    test_model(clf, glob_path_test)
 
-    # test_model(clf, glob_path_test)
+    # visualize_data(glob_path_train)
 
 
 if __name__ == "__main__":
