@@ -26,16 +26,28 @@ Project VMM
                 <hr class="star-primary">
             </div>
         </div>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+          <div class="row alert alert-danger text-center">
+            <ul class="flashes ">
+            {% for message in messages %}
+              <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+        {% endwith %}
+
         <div class="row">
-            <div class="col-sm-4 portfolio-item"> </div>
-            <div class="col-sm-4 portfolio-item">
-                <form action="" method=post enctype=multipart/form-data>
+            <div class="col-sm-1 portfolio-item"> </div>
+            <div class="col-sm-10 portfolio-item text-center">
+                <form action="" method=post enctype=multipart/form-data style="margin:0 auto;">
                     <label class="btn btn-default btn-file "> <input type=file name=file> </label>
                     <p></p>  
                     <input class="btn btn-default btn-file" type=submit value=Upload >
                 </form>
             </div>
-            <div class="col-sm-4 portfolio-item"></div>
+            <div class="col-sm-1 portfolio-item"></div>
 
 
             </div>

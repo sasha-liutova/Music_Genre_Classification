@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, request, redirect, url_for, send_from_directory
+from flask import Flask, flash, render_template, request, request, redirect, url_for, send_from_directory
 import os
 from werkzeug.utils import secure_filename
 
@@ -17,10 +17,11 @@ import main
 
 
 UPLOAD_FOLDER = './'
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'au'])
+ALLOWED_EXTENSIONS = set(['au'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.secret_key = 'secret123'
 
 @app.route("/image", methods=['GET'])
 def login():
@@ -44,6 +45,9 @@ def upload_file():
         # submit a empty part without filename
         if file.filename == '':
             flash('No selected file')
+            return redirect(request.url)
+        if not allowed_file(file.filename):
+            flash('Not supported type of file')
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
