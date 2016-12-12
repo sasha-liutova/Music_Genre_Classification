@@ -17,7 +17,7 @@ import main
 
 
 UPLOAD_FOLDER = './'
-ALLOWED_EXTENSIONS = set(['au'])
+ALLOWED_EXTENSIONS = set(['au','mp3'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER

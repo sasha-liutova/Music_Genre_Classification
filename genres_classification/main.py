@@ -82,7 +82,11 @@ def extract_features(paths):
     array_sr = []
 
     for path in paths:
-        y, sr = librosa.load(path=path, sr=glob_sr, duration=glob_duration)
+        offset = 0
+        duration_song = librosa.get_duration(filename=path)
+        if duration_song > glob_duration:
+            offset = duration_song/2 - glob_duration/2 # around middle of song
+        y, sr = librosa.load(path=path, sr=glob_sr, offset= offset, duration=glob_duration)
         array_y.append(y)
         array_sr.append(sr)
 
