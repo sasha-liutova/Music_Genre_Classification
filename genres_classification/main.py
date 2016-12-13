@@ -15,6 +15,8 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import pickle
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
 
 
 test_path = './genres_train'
@@ -117,13 +119,24 @@ def predict_genre(name_file, clf):
     """
     :param name_file:
     :param clf: model
-    :return: predicted genre (string)
+    :return: predicted array of probabilities of genres
     """
 
     features = extract_features([name_file])[0]
 
     return clf.predict_proba(np.reshape(features, (1, -1)))
 
+
+def predict_genre_classic(name_file, clf):
+    """
+    :param name_file:
+    :param clf: model
+    :return: predicted genre (string)
+    """
+
+    features = extract_features([name_file])[0]
+
+    return clf.predict(np.reshape(features, (1, -1)))
 
 def train_model(folder):
 
@@ -140,7 +153,9 @@ def train_model(folder):
 
     # Create a classification model using kNN
 
-    clf = KNeighborsClassifier(n_neighbors=5)
+    # clf = KNeighborsClassifier(n_neighbors=5)
+    # clf = RandomForestClassifier(n_estimators=10, max_depth=None,min_samples_split=2)
+    clf = KNeighborsClassifier(n_neighbors=5, algorithm="ball_tree", n_jobs=4)
 
     # scores = cross_val_score(clf,features_mfcc_cut , labels, cv=5)
     # print("Scores:\n", scores)
@@ -156,7 +171,7 @@ def test_model(clf, folder):
     expected_labels = extract_genres_from_paths(paths)
     predicted_labels = []
     for file in paths:
-        predicted_labels.append(predict_genre(file, clf))
+        predicted_labels.append(predict_genre_classic(file, clf))
     correct, false = 0, 0
     for predicted,expected in zip(predicted_labels, expected_labels):
         if(predicted == expected):
@@ -225,10 +240,10 @@ def main():
     choose = int(input("Do you want to train new model[1] or use old one[0]"))
     if choose == 1:
         clf = train_model(glob_path_train)
-        joblib.dump(clf, 'train_model.pkl')
+        joblib.dump(clf, 'train_model_grid_search_cv.pkl')
     else:
         try:
-            clf = joblib.load('train_model.pkl')
+            clf = joblib.load('train_model_grid_search_cv.pkl')
         except FileNotFoundError:
             clf = train_model(glob_path_train)
 
