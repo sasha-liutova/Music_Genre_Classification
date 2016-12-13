@@ -22,10 +22,9 @@ from sklearn.model_selection import GridSearchCV
 test_path = './genres_train'
 glob_path_train = './genres_split/train'
 glob_path_test = './genres_split/test'
-glob_n_mfcc = 25
+glob_n_mfcc = 13
 glob_sr = 22050
 glob_duration = 30.0
-glob_n_vectors = 13
 
 def flaten_matrix(matrix):
     """
@@ -36,6 +35,19 @@ def flaten_matrix(matrix):
     for row in matrix:
         concat.extend(row)
     return concat
+
+def kl(p, q):
+	"""Kullback-Leibler divergence D(P || Q) for discrete distributions
+
+	Parameters
+	----------
+	p, q : array-like, dtype=float, shape=n
+	Discrete probability distributions.
+	"""
+	p = np.asarray(p, dtype=np.float)
+	q = np.asarray(q, dtype=np.float)
+
+	return np.sum(np.where(p != 0, p * np.log(p / q), 0))
 
 def extract_min_max_vectors(matrix):
     pass
@@ -143,7 +155,7 @@ def train_model(folder):
 
     # Create a classification model using kNN
 
-    clf = KNeighborsClassifier(n_neighbors=7)
+    clf = KNeighborsClassifier(n_neighbors=7, metric=kl)
     # clf = RandomForestClassifier(n_estimators=5, max_depth=None,min_samples_split=2)
     #clf = KNeighborsClassifier(n_neighbors=5, algorithm="ball_tree", n_jobs=4)
 
@@ -230,10 +242,10 @@ def main():
     choose = int(input("Do you want to train new model[1] or use old one[0]"))
     if choose == 1:
         clf = train_model(glob_path_train)
-        joblib.dump(clf, 'train_model_knn_melspectrogram2.pkl')
+        joblib.dump(clf, 'train_model_Kullback_Leibler.pkl')
     else:
         try:
-            clf = joblib.load('train_model_knn_melspectrogram2.pkl')
+            clf = joblib.load('train_model_Kullback_Leibler.pkl')
         except FileNotFoundError:
             clf = train_model(glob_path_train)
 
