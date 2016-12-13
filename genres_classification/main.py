@@ -22,7 +22,7 @@ from sklearn.model_selection import GridSearchCV
 test_path = './genres_train'
 glob_path_train = './genres_split/train'
 glob_path_test = './genres_split/test'
-glob_n_mfcc = 20
+glob_n_mfcc = 25
 glob_sr = 22050
 glob_duration = 30.0
 glob_n_vectors = 13
@@ -80,8 +80,7 @@ def extract_features(paths):
     # Load the audio as a waveform `y`
     # Store the sampling rate as `sr`
 
-    array_y = []
-    array_sr = []
+    features_mfcc = []
 
     for path in paths:
         offset = 0
@@ -89,29 +88,20 @@ def extract_features(paths):
         if duration_song > glob_duration:
             offset = duration_song/2 - glob_duration/2 # around middle of song
         y, sr = librosa.load(path=path, sr=glob_sr, offset= offset, duration=glob_duration)
-        array_y.append(y)
-        array_sr.append(sr)
 
-    # Extract features using MFCC
+        # Extract features using MFCC
 
-    features_mfcc = []
-    for i in range(len(array_y)):
+        #S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=65, fmax = 8000)
+        #mfcc = librosa.feature.mfcc(S=librosa.logamplitude(S))
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=glob_n_mfcc)
+        #mfcc = librosa.feature.melspectrogram(y=y, sr=sr)
 
-        mfcc = librosa.feature.mfcc(y=array_y[i], sr=array_sr[i], n_mfcc=glob_n_mfcc)
+        X = []
+        for i in range(len(mfcc)):
+            mfcc_len = len(mfcc[i])
+            X.append(np.mean(mfcc[i][int(mfcc_len / 10):int(mfcc_len * 9 / 10)], axis=0))
 
-        mean_mfcc = []
-        reduced_mfcc = []
-
-        for x in range(len(mfcc[0])):
-            mean_mfcc.append(mfcc[:,x])
-
-        for x in range(int(glob_duration)):
-            average = 0
-            for y in range(40): # 40 is approximately amount of vector values for one second
-                average += mean_mfcc[y + 40*x]
-            reduced_mfcc.append(average / 40.0)
-
-        features_mfcc.append(flaten_matrix(reduced_mfcc))  # add obtained vectors in row
+        features_mfcc.append(X)  # add obtained vectors in row
 
     return features_mfcc
 
@@ -153,9 +143,9 @@ def train_model(folder):
 
     # Create a classification model using kNN
 
-    # clf = KNeighborsClassifier(n_neighbors=5)
-    # clf = RandomForestClassifier(n_estimators=10, max_depth=None,min_samples_split=2)
-    clf = KNeighborsClassifier(n_neighbors=5, algorithm="ball_tree", n_jobs=4)
+    clf = KNeighborsClassifier(n_neighbors=7)
+    # clf = RandomForestClassifier(n_estimators=5, max_depth=None,min_samples_split=2)
+    #clf = KNeighborsClassifier(n_neighbors=5, algorithm="ball_tree", n_jobs=4)
 
     # scores = cross_val_score(clf,features_mfcc_cut , labels, cv=5)
     # print("Scores:\n", scores)
@@ -240,10 +230,10 @@ def main():
     choose = int(input("Do you want to train new model[1] or use old one[0]"))
     if choose == 1:
         clf = train_model(glob_path_train)
-        joblib.dump(clf, 'train_model_grid_search_cv.pkl')
+        joblib.dump(clf, 'train_model_knn_melspectrogram2.pkl')
     else:
         try:
-            clf = joblib.load('train_model_grid_search_cv.pkl')
+            clf = joblib.load('train_model_knn_melspectrogram2.pkl')
         except FileNotFoundError:
             clf = train_model(glob_path_train)
 
