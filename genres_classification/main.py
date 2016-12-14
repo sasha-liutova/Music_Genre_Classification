@@ -92,60 +92,16 @@ def extract_genres_from_paths(files):
 #     return mfcc_cp
 
 
-def extract_features(paths):
-    # Load the audio as a waveform `y`
-    # Store the sampling rate as `sr`
+def extract_features(paths , choose = 0):
+    # Extract and save feataures from all audios given by paths
 
     features_mfcc = []
-
-    choose = int(input("Do you want to use new features[1] or use old one[0]"))
 
     if choose == 1:
 
         for path in paths:
-            offset = 0
-            duration_song = librosa.get_duration(filename=path)
-            if duration_song > glob_duration:
-                offset = duration_song/2 - glob_duration/2 # around middle of song
-            y, sr = librosa.load(path=path, sr=glob_sr, offset= offset, duration=glob_duration)
-            # print(path)
-
-            # Extract features using MFCC
-
-            #S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=65, fmax = 8000)
-            #mfcc = librosa.feature.mfcc(S=librosa.logamplitude(S))
-            mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=glob_n_mfcc)
-            #mfcc = librosa.feature.melspectrogram(y=y, sr=sr)
-
-            X = []
-            for i in range(len(mfcc)):
-                mfcc_len = len(mfcc[i])
-                X.append(np.mean(mfcc[i][int(mfcc_len / 10):int(mfcc_len * 9 / 10)], axis=0))
-
-
-            # Extract tempo
-
-            hop_length = 512
-            oenv = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length)
-            tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr, hop_length = hop_length)
-            # Compute global onset autocorrelation
-            ac_global = librosa.autocorrelate(oenv, max_size=tempogram.shape[0])
-            ac_global = librosa.util.normalize(ac_global)
-            # Estimate the global tempo for display purposes
-            tempo = librosa.beat.estimate_tempo(oenv, sr=sr, hop_length=hop_length)
-
-            # print(tempo)
-            X.append(tempo)
-
-            #zero crossing rate
-            zero_crossing = librosa.feature.zero_crossing_rate(y)
-
-            # print(np.mean(zero_crossing))
-            X.append(np.mean(zero_crossing))
-
-            features_mfcc.append(X)  # add obtained vectors in row
-
-            # print("\n")
+            X = extract_feature(path)
+            features_mfcc.append(X)  # add obtained vector to the row
 
         joblib.dump(features_mfcc, 'features_mfcc.data')
     else:
@@ -153,9 +109,54 @@ def extract_features(paths):
             features_mfcc = joblib.load('features_mfcc.data')
         except FileNotFoundError:
             print("File not found!")
-            features_mfcc = extract_features(glob_path_train)
+            features_mfcc = extract_features(paths, choose=1)
 
     return features_mfcc
+
+def extract_feature(path):
+    # Extract featre exactly from one audio, which is in path
+
+    offset = 0
+    duration_song = librosa.get_duration(filename=path)
+    if duration_song > glob_duration:
+        offset = duration_song/2 - glob_duration/2 # around middle of song
+    y, sr = librosa.load(path=path, sr=glob_sr, offset= offset, duration=glob_duration)
+    # print(path)
+
+    # Extract features using MFCC
+
+    #S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=65, fmax = 8000)
+    #mfcc = librosa.feature.mfcc(S=librosa.logamplitude(S))
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=glob_n_mfcc)
+    #mfcc = librosa.feature.melspectrogram(y=y, sr=sr)
+
+    X = []
+    for i in range(len(mfcc)):
+        mfcc_len = len(mfcc[i])
+        X.append(np.mean(mfcc[i][int(mfcc_len / 10):int(mfcc_len * 9 / 10)], axis=0))
+
+
+    # Extract tempo
+
+    hop_length = 512
+    oenv = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length)
+    tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr, hop_length = hop_length)
+    # Compute global onset autocorrelation
+    ac_global = librosa.autocorrelate(oenv, max_size=tempogram.shape[0])
+    ac_global = librosa.util.normalize(ac_global)
+    # Estimate the global tempo for display purposes
+    tempo = librosa.beat.estimate_tempo(oenv, sr=sr, hop_length=hop_length)
+
+    # print(tempo)
+    X.append(tempo)
+
+    #zero crossing rate
+    zero_crossing = librosa.feature.zero_crossing_rate(y)
+
+    # print(np.mean(zero_crossing))
+    X.append(np.mean(zero_crossing))
+
+    return X
 
 def predict_genre(name_file, clf):
     """
@@ -164,7 +165,7 @@ def predict_genre(name_file, clf):
     :return: predicted array of probabilities of genres
     """
 
-    features = extract_features([name_file])[0]
+    features = [extract_feature([name_file])]
 
     return clf.predict_proba(np.reshape(features, (1, -1)))
 
@@ -176,7 +177,7 @@ def predict_genre_classic(name_file, clf):
     :return: predicted genre (string)
     """
 
-    features = extract_features([name_file])[0]
+    features = [extract_feature(name_file)]
 
     return clf.predict(np.reshape(features, (1, -1)))
 
@@ -185,7 +186,9 @@ def train_model(folder):
     # Form paths for files from directory path_to_folder
     paths = paths_from_folder(folder)
 
-    features = extract_features(paths)
+    choose = int(input("Do you want to use new features[1] or use old one[0]"))
+
+    features = extract_features(paths, choose=choose)
 
     # Extract label for each file
 
@@ -195,7 +198,7 @@ def train_model(folder):
 
     # Create a classification model using kNN
 
-    clf = KNeighborsClassifier(n_neighbors=7, metric="minkowski", p=3)
+    clf = KNeighborsClassifier(n_neighbors=7, metric="minkowski", p=4)
     # clf = RandomForestClassifier(n_estimators=5, max_depth=None,min_samples_split=2)
     #clf = KNeighborsClassifier(n_neighbors=5, algorithm="ball_tree", n_jobs=4)
 
@@ -263,7 +266,7 @@ def visualize_data(folder):
         # Form paths for files from directory path_to_folder
         paths = paths_from_folder(folder)
 
-        features = extract_features(paths)
+        features = extract_features(paths, choose=1)
 
         pickle.dump(features, open("features.py", "wb"))
 
