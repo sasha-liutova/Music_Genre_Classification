@@ -198,7 +198,7 @@ def train_model(folder):
 
     # Create a classification model using kNN
 
-    clf = KNeighborsClassifier(n_neighbors=7, metric="minkowski", p=4)
+    clf = KNeighborsClassifier(n_neighbors=7, metric="chebyshev")
     # clf = RandomForestClassifier(n_estimators=5, max_depth=None,min_samples_split=2)
     #clf = KNeighborsClassifier(n_neighbors=5, algorithm="ball_tree", n_jobs=4)
 
