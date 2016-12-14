@@ -39,7 +39,11 @@ def flaten_matrix(matrix):
 def kl(p, q):
 	"""Kullback-Leibler divergence D(P || Q) for discrete distributions
 
+    The Kullback–Leibler divergence is an asymmetric information theoretic divergence measure. It is a measure of difference
+    between two probability distributions.
 	Parameters
+
+	The Kullback-Leibler divergence measures the distance between two distributions: P(X,Y)P(X,Y) and P(X)⋅P(Y)
 	----------
 	p, q : array-like, dtype=float, shape=n
 	Discrete probability distributions.
@@ -94,26 +98,62 @@ def extract_features(paths):
 
     features_mfcc = []
 
-    for path in paths:
-        offset = 0
-        duration_song = librosa.get_duration(filename=path)
-        if duration_song > glob_duration:
-            offset = duration_song/2 - glob_duration/2 # around middle of song
-        y, sr = librosa.load(path=path, sr=glob_sr, offset= offset, duration=glob_duration)
+    choose = int(input("Do you want to use new features[1] or use old one[0]"))
 
-        # Extract features using MFCC
+    if choose == 1:
 
-        #S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=65, fmax = 8000)
-        #mfcc = librosa.feature.mfcc(S=librosa.logamplitude(S))
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=glob_n_mfcc)
-        #mfcc = librosa.feature.melspectrogram(y=y, sr=sr)
+        for path in paths:
+            offset = 0
+            duration_song = librosa.get_duration(filename=path)
+            if duration_song > glob_duration:
+                offset = duration_song/2 - glob_duration/2 # around middle of song
+            y, sr = librosa.load(path=path, sr=glob_sr, offset= offset, duration=glob_duration)
+            # print(path)
 
-        X = []
-        for i in range(len(mfcc)):
-            mfcc_len = len(mfcc[i])
-            X.append(np.mean(mfcc[i][int(mfcc_len / 10):int(mfcc_len * 9 / 10)], axis=0))
+            # Extract features using MFCC
 
-        features_mfcc.append(X)  # add obtained vectors in row
+            #S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=65, fmax = 8000)
+            #mfcc = librosa.feature.mfcc(S=librosa.logamplitude(S))
+            mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=glob_n_mfcc)
+            #mfcc = librosa.feature.melspectrogram(y=y, sr=sr)
+
+            X = []
+            for i in range(len(mfcc)):
+                mfcc_len = len(mfcc[i])
+                X.append(np.mean(mfcc[i][int(mfcc_len / 10):int(mfcc_len * 9 / 10)], axis=0))
+
+
+            # Extract tempo
+
+            hop_length = 512
+            oenv = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length)
+            tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr, hop_length = hop_length)
+            # Compute global onset autocorrelation
+            ac_global = librosa.autocorrelate(oenv, max_size=tempogram.shape[0])
+            ac_global = librosa.util.normalize(ac_global)
+            # Estimate the global tempo for display purposes
+            tempo = librosa.beat.estimate_tempo(oenv, sr=sr, hop_length=hop_length)
+
+            # print(tempo)
+            X.append(tempo)
+
+            #zero crossing rate
+            zero_crossing = librosa.feature.zero_crossing_rate(y)
+
+            # print(np.mean(zero_crossing))
+            X.append(np.mean(zero_crossing))
+
+            features_mfcc.append(X)  # add obtained vectors in row
+
+            # print("\n")
+
+        joblib.dump(features_mfcc, 'features_mfcc.data')
+    else:
+        try:
+            features_mfcc = joblib.load('features_mfcc.data')
+        except FileNotFoundError:
+            print("File not found!")
+            features_mfcc = extract_features(glob_path_train)
 
     return features_mfcc
 
@@ -155,7 +195,7 @@ def train_model(folder):
 
     # Create a classification model using kNN
 
-    clf = KNeighborsClassifier(n_neighbors=7, metric=kl)
+    clf = KNeighborsClassifier(n_neighbors=7, metric="minkowski", p=3)
     # clf = RandomForestClassifier(n_estimators=5, max_depth=None,min_samples_split=2)
     #clf = KNeighborsClassifier(n_neighbors=5, algorithm="ball_tree", n_jobs=4)
 
@@ -242,10 +282,10 @@ def main():
     choose = int(input("Do you want to train new model[1] or use old one[0]"))
     if choose == 1:
         clf = train_model(glob_path_train)
-        joblib.dump(clf, 'train_model_Kullback_Leibler.pkl')
+        joblib.dump(clf, 'train_model_minkowski3_new_features.pkl')
     else:
         try:
-            clf = joblib.load('train_model_Kullback_Leibler.pkl')
+            clf = joblib.load('train_model_minkowski3_new_features.pkl')
         except FileNotFoundError:
             clf = train_model(glob_path_train)
 
