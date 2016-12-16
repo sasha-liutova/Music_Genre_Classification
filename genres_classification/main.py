@@ -1,4 +1,3 @@
-
 # from scikits.talkbox.features import mfcc
 # http://pydub.com/ for slice audio
 import librosa
@@ -18,13 +17,13 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 
-
 test_path = './genres_train'
 glob_path_train = './genres_split/train'
 glob_path_test = './genres_split/test'
 glob_n_mfcc = 13
 glob_sr = 22050
 glob_duration = 30.0
+
 
 def flaten_matrix(matrix):
     """
@@ -36,25 +35,20 @@ def flaten_matrix(matrix):
         concat.extend(row)
     return concat
 
+
 def kl(p, q):
-	"""Kullback-Leibler divergence D(P || Q) for discrete distributions
+    """Kullback-Leibler divergence D(P || Q) for discrete distributions
+    The Kullback-Leibler divergence measures the distance between two distributions: P(X,Y)P(X,Y) and P(X)P(Y)
+    p, q : array-like, dtype=float, shape=n
+    Discrete probability distributions.
 
-    The Kullback–Leibler divergence is an asymmetric information theoretic divergence measure. It is a measure of difference
-    between two probability distributions.
-	Parameters
+    """
 
-	The Kullback-Leibler divergence measures the distance between two distributions: P(X,Y)P(X,Y) and P(X)⋅P(Y)
-	----------
-	p, q : array-like, dtype=float, shape=n
-	Discrete probability distributions.
-	"""
-	p = np.asarray(p, dtype=np.float)
-	q = np.asarray(q, dtype=np.float)
+    p = np.asarray(p, dtype=np.float)
+    q = np.asarray(q, dtype=np.float)
 
-	return np.sum(np.where(p != 0, p * np.log(p / q), 0))
+    return np.sum(np.where(p != 0, p * np.log(p / q), 0))
 
-def extract_min_max_vectors(matrix):
-    pass
 
 def paths_from_folder(folder):
     """
@@ -66,23 +60,27 @@ def paths_from_folder(folder):
         paths.extend([join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")])
     return paths
 
+
 def extract_genre(filenames, dirpath):
     """
     :param filenames:
     :param dirpath:
     :return: list of genres of files
     """
-    return [filename.split("/")[-2] for filename in [join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")]]
+    return [filename.split("/")[-2] for filename in
+            [join(dirpath, f) for f in filenames if isfile(join(dirpath, f)) and f.endswith(".au")]]
+
 
 def extract_genres_from_paths(files):
     """
     :param files: list of paths to files
     :return: list of genres of files
     """
-    genres=[]
+    genres = []
     for file in files:
         genres.append(file.split('/')[-1].split('.')[0])
     return genres
+
 
 # def preprocess_mfcc(mfcc):
 #     mfcc_cp = copy.deepcopy(mfcc)
@@ -92,8 +90,8 @@ def extract_genres_from_paths(files):
 #     return mfcc_cp
 
 
-def extract_features(paths , choose = 0):
-    # Extract and save feataures from all audios given by paths
+def extract_features(paths, choose=0):
+    # Extract and save features from all audios given by paths
 
     features_mfcc = []
 
@@ -113,44 +111,37 @@ def extract_features(paths , choose = 0):
 
     return features_mfcc
 
+
 def extract_feature(path):
-    # Extract featre exactly from one audio, which is in path
+    # Extract feature exactly from one audio, which is in path
 
     offset = 0
     duration_song = librosa.get_duration(filename=path)
     if duration_song > glob_duration:
-        offset = duration_song/2 - glob_duration/2 # around middle of song
-    y, sr = librosa.load(path=path, sr=glob_sr, offset= offset, duration=glob_duration)
-    # print(path)
+        offset = duration_song / 2 - glob_duration / 2  # around middle of song
+    y, sr = librosa.load(path=path, sr=glob_sr, offset=offset, duration=glob_duration)
 
     # Extract features using MFCC
 
-    #S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=65, fmax = 8000)
-    #mfcc = librosa.feature.mfcc(S=librosa.logamplitude(S))
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=glob_n_mfcc)
-    #mfcc = librosa.feature.melspectrogram(y=y, sr=sr)
 
     X = []
     for i in range(len(mfcc)):
         mfcc_len = len(mfcc[i])
         X.append(np.mean(mfcc[i][int(mfcc_len / 10):int(mfcc_len * 9 / 10)], axis=0))
 
-
     # Extract tempo
 
     hop_length = 512
     oenv = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length)
-    tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr, hop_length = hop_length)
-    # Compute global onset autocorrelation
-    ac_global = librosa.autocorrelate(oenv, max_size=tempogram.shape[0])
-    ac_global = librosa.util.normalize(ac_global)
+
     # Estimate the global tempo for display purposes
     tempo = librosa.beat.estimate_tempo(oenv, sr=sr, hop_length=hop_length)
 
     # print(tempo)
     X.append(tempo)
 
-    #zero crossing rate
+    # zero crossing rate
     zero_crossing = librosa.feature.zero_crossing_rate(y)
 
     # print(np.mean(zero_crossing))
@@ -158,19 +149,19 @@ def extract_feature(path):
 
     return X
 
-def predict_genre(name_file, clf):
+
+def predict_genre_probabilities(name_file, clf):
     """
     :param name_file:
     :param clf: model
     :return: predicted array of probabilities of genres
     """
 
-    features = [extract_feature([name_file])]
-
+    features = [extract_feature(name_file)]
     return clf.predict_proba(np.reshape(features, (1, -1)))
 
 
-def predict_genre_classic(name_file, clf):
+def predict_genre(name_file, clf):  # DELETEEEEEEEEEEE!!!!!!!!!!!!
     """
     :param name_file:
     :param clf: model
@@ -178,54 +169,46 @@ def predict_genre_classic(name_file, clf):
     """
 
     features = [extract_feature(name_file)]
-
     return clf.predict(np.reshape(features, (1, -1)))
 
-def train_model(folder):
 
+def train_model(folder):
     # Form paths for files from directory path_to_folder
     paths = paths_from_folder(folder)
-
-    choose = int(input("Do you want to use new features[1] or use old one[0]"))
-
+    choose = int(input("Do you want to use new features[1] or use old one[0]:"))
     features = extract_features(paths, choose=choose)
 
     # Extract label for each file
-
     labels = []
     for (dirpath, dirnames, filenames) in walk(folder):
         labels.extend(extract_genre(filenames, dirpath))
 
-    # Create a classification model using kNN
 
-    # Set the parameters by cross-validation
+        # ONLY FOR TESTING RIGHT PARAMS FOR VALIDATOR
+        # tuned_parameters = [
+        #     {
+        #         'n_neighbors': [1,3,5,7,9,11,13,15],
+        #         'weights': ["uniform", "distance"],
+        #         "metric" : ["euclidean","manhattan","chebyshev"]
+        #     },
+        #     {
+        #         'n_neighbors': [1, 3, 5, 7, 9, 11, 13, 15],
+        #         'weights': ["uniform", "distance"],
+        #         "algorithm" : ["ball_tree", "kd_tree" , "brute"],
+        #         "leaf_size": [10,20,30,40,50],
+        #         "metric": ["euclidean", "manhattan", "chebyshev"]
+        #     },
+        #     {
+        #         'n_neighbors': [1, 3, 5, 7, 9, 11, 13, 15],
+        #         'weights': ["uniform", "distance"],
+        #         "algorithm": ["ball_tree", "kd_tree", "brute"],
+        #         "leaf_size": [10, 20, 30, 40, 50],
+        #         "metric": ["minkowski"],
+        #         "p": [1,2,3,4,5,6,7]
+        #     }
+        # ]
 
-
-    # ONLY FOR TESTING RITCH PARAM FOR VALIDATOR
-    # tuned_parameters = [
-    #     {
-    #         'n_neighbors': [1,3,5,7,9,11,13,15],
-    #         'weights': ["uniform", "distance"],
-    #         "metric" : ["euclidean","manhattan","chebyshev"]
-    #     },
-    #     {
-    #         'n_neighbors': [1, 3, 5, 7, 9, 11, 13, 15],
-    #         'weights': ["uniform", "distance"],
-    #         "algorithm" : ["ball_tree", "kd_tree" , "brute"],
-    #         "leaf_size": [10,20,30,40,50],
-    #         "metric": ["euclidean", "manhattan", "chebyshev"]
-    #     },
-    #     {
-    #         'n_neighbors': [1, 3, 5, 7, 9, 11, 13, 15],
-    #         'weights': ["uniform", "distance"],
-    #         "algorithm": ["ball_tree", "kd_tree", "brute"],
-    #         "leaf_size": [10, 20, 30, 40, 50],
-    #         "metric": ["minkowski"],
-    #         "p": [1,2,3,4,5,6,7]
-    #     }
-    # ]
-
-    # tuned_parameters = [
+        # tuned_parameters = [
         # {
         #     "C": [0.1, 1, 4, 10, 50],
         #     "kernel": ["linear"]
@@ -253,44 +236,51 @@ def train_model(folder):
 
     # clf = KNeighborsClassifier(n_neighbors=7, metric="chebyshev")
 
-    #clf = GridSearchCV(KNeighborsClassifier(), tuned_parameters)
-    #clf = GridSearchCV(svm.SVC(), tuned_parameters, cv=3, n_jobs=4)
+    # clf = GridSearchCV(KNeighborsClassifier(), tuned_parameters)
+    # clf = GridSearchCV(svm.SVC(), tuned_parameters, cv=3, n_jobs=4)
 
 
-    clf = svm.SVC(C=4, kernel="linear")
-    print (clf)
+    # clf = svm.SVC(C=4, kernel="linear")
 
     # clf.fit(X_train, y_train)
     # clf = RandomForestClassifier(n_estimators=5, max_depth=None,min_samples_split=2)
-    #clf = KNeighborsClassifier(n_neighbors=5, algorithm="ball_tree", n_jobs=4)
-
-    # scores = cross_val_score(clf,features_mfcc_cut , labels, cv=5)
-    # print("Scores:\n", scores)
-    for vector, file in zip(features, paths): # REMOVE THIS !!!!!!!!!!!!!!!!!!!!!!!!!!!
-        print(file, len(vector))
+    clf = KNeighborsClassifier(n_neighbors=7, n_jobs=4)
 
     clf.fit(features, labels)
 
     return clf
 
+
 def test_model(clf, folder):
+    """
+    tests model on predifined testing set
+    :param clf: model
+    :param folder: path to files from testing set
+    :return: prints accuracy
+    """
     paths = paths_from_folder(folder)
     expected_labels = extract_genres_from_paths(paths)
     predicted_labels = []
     for file in paths:
-        predicted_labels.append(predict_genre_classic(file, clf))
+        predicted_labels.append(predict_genre(file, clf))
     correct, false = 0, 0
-    for predicted,expected in zip(predicted_labels, expected_labels):
-        if(predicted == expected):
+    for predicted, expected in zip(predicted_labels, expected_labels):
+        if (predicted == expected):
             correct += 1
         else:
             false += 1
         print(expected, predicted)
-    accuracy = correct/(correct+false)
+    accuracy = correct / (correct + false)
     print('accuracy: ', accuracy)
 
-def plot_data(labels, features):
 
+def plot_data(labels, features):
+    """
+    visualizes extracted features in 2d dimension
+    :param labels:
+    :param features:
+    :return: shows plot
+    """
     # calculating how many unique clusters there are
     unique_clusters = []
     for l in labels:
@@ -320,17 +310,17 @@ def plot_data(labels, features):
         plt.scatter(point[0], point[1], color=colors[label], s=5)
     plt.show()
 
-def visualize_data(folder):
 
+def visualize_data(folder):
     try:
-        features = pickle.load(open("features.py", "rb"))
+        features = pickle.load(open("features_mfcc.data", "rb"))
     except FileNotFoundError:
         # Form paths for files from directory path_to_folder
         paths = paths_from_folder(folder)
 
         features = extract_features(paths, choose=1)
 
-        pickle.dump(features, open("features.py", "wb"))
+        pickle.dump(features, open("features_mfcc.data", "wb"))
 
     tsne = TSNE(n_components=2, random_state=0)
     transformed_features = tsne.fit_transform(features)
@@ -343,14 +333,15 @@ def visualize_data(folder):
 
     plot_data(labels, transformed_features)
 
+
 def main():
-    choose = int(input("Do you want to train new model[1] or use old one[0]"))
+    choose = int(input("Do you want to train new model[1] or use old one[0]:"))
     if choose == 1:
         clf = train_model(glob_path_train)
-        joblib.dump(clf, 'train_model_SVC_prob_true.pkl')
+        joblib.dump(clf, 'model.pkl')
     else:
         try:
-            clf = joblib.load('train_model_SVC_prob_true.pkl')
+            clf = joblib.load('model.pkl')
         except FileNotFoundError:
             clf = train_model(glob_path_train)
 
@@ -361,7 +352,7 @@ def main():
 
     test_model(clf, glob_path_test)
 
-    # visualize_data(glob_path_train)
+    visualize_data(glob_path_train)
 
 
 if __name__ == "__main__":
