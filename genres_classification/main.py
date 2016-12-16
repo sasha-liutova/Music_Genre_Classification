@@ -198,7 +198,69 @@ def train_model(folder):
 
     # Create a classification model using kNN
 
-    clf = KNeighborsClassifier(n_neighbors=7, metric="chebyshev")
+    # Set the parameters by cross-validation
+
+
+    # ONLY FOR TESTING RITCH PARAM FOR VALIDATOR
+    # tuned_parameters = [
+    #     {
+    #         'n_neighbors': [1,3,5,7,9,11,13,15],
+    #         'weights': ["uniform", "distance"],
+    #         "metric" : ["euclidean","manhattan","chebyshev"]
+    #     },
+    #     {
+    #         'n_neighbors': [1, 3, 5, 7, 9, 11, 13, 15],
+    #         'weights': ["uniform", "distance"],
+    #         "algorithm" : ["ball_tree", "kd_tree" , "brute"],
+    #         "leaf_size": [10,20,30,40,50],
+    #         "metric": ["euclidean", "manhattan", "chebyshev"]
+    #     },
+    #     {
+    #         'n_neighbors': [1, 3, 5, 7, 9, 11, 13, 15],
+    #         'weights': ["uniform", "distance"],
+    #         "algorithm": ["ball_tree", "kd_tree", "brute"],
+    #         "leaf_size": [10, 20, 30, 40, 50],
+    #         "metric": ["minkowski"],
+    #         "p": [1,2,3,4,5,6,7]
+    #     }
+    # ]
+
+    # tuned_parameters = [
+        # {
+        #     "C": [0.1, 1, 4, 10, 50],
+        #     "kernel": ["linear"]
+        # },
+        # {
+        #     "C": [0.1, 0.5, 1, 2, 4, 8, 10, 100],
+        #     "kernel": ["poly"],
+        #     "degree": [2, 3, 4, 5],
+        #     "coef0": [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 2, 4, 8, 16],
+        #     "probability": [True],
+        # },
+        # {
+        #     "C": [0.1, 0.5, 1, 2, 4, 8, 10, 100],
+        #     "kernel": ["sigmoid"],
+        #     "probability": [True],
+        #
+        # },
+    #     {
+    #         "C": [0.1, 0.5, 1, 2, 4, 8, 10, 100],
+    #         "kernel": ["rbf"],
+    #         "probability": [True],
+    #     }
+    # ]
+
+
+    # clf = KNeighborsClassifier(n_neighbors=7, metric="chebyshev")
+
+    #clf = GridSearchCV(KNeighborsClassifier(), tuned_parameters)
+    #clf = GridSearchCV(svm.SVC(), tuned_parameters, cv=3, n_jobs=4)
+
+
+    clf = svm.SVC(C=4, kernel="linear")
+    print (clf)
+
+    # clf.fit(X_train, y_train)
     # clf = RandomForestClassifier(n_estimators=5, max_depth=None,min_samples_split=2)
     #clf = KNeighborsClassifier(n_neighbors=5, algorithm="ball_tree", n_jobs=4)
 
@@ -285,12 +347,17 @@ def main():
     choose = int(input("Do you want to train new model[1] or use old one[0]"))
     if choose == 1:
         clf = train_model(glob_path_train)
-        joblib.dump(clf, 'train_model_minkowski3_new_features.pkl')
+        joblib.dump(clf, 'train_model_SVC_prob_true.pkl')
     else:
         try:
-            clf = joblib.load('train_model_minkowski3_new_features.pkl')
+            clf = joblib.load('train_model_SVC_prob_true.pkl')
         except FileNotFoundError:
             clf = train_model(glob_path_train)
+
+    # Only for testing best validator
+    # print(clf.best_estimator_)
+    # print(clf.best_params_)
+    # print(clf.best_score_)
 
     test_model(clf, glob_path_test)
 
